@@ -1,71 +1,69 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Login • ryttr</title>
+  <meta charset="utf-8" />
+  <title>Login • Ryttr</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body {
-      margin:0; min-height:100vh; display:grid; place-items:center;
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-      background:#0b0f19; color:#e6e6e6; text-align:center; padding:24px;
+    :root { --bg:#0b0f19; --surface:#121826; --text:#e6e6e6; --muted:#aab0bd; --accent:#5b9cff; }
+    body{
+      margin:0; min-height:100vh; display:grid; place-items:center; background:var(--bg);
+      color:var(--text); font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; padding:24px;
     }
-    .card {
-      max-width:420px; width:100%; padding:28px; border-radius:14px; 
-      background:#121826; border:1px solid rgba(255,255,255,.08);
+    .card{
+      width:100%; max-width:420px; background:var(--surface); border:1px solid rgba(255,255,255,.08);
+      border-radius:16px; padding:24px; box-shadow:0 10px 30px rgba(0,0,0,.25); text-align:center;
     }
-    h1 { margin:0 0 10px; font-size:26px; }
-    input[type=email] {
-      padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,.14);
-      background:#0f1424; color:#fff; width:100%; margin-bottom:12px;
-    }
-    button {
-      padding:12px 16px; border-radius:10px; border:none;
-      background:#5b9cff; color:#0b0f19; font-weight:bold; width:100%;
-    }
-    #message { margin-top:10px; font-size:14px; min-height:20px; }
+    h1{ margin:0 0 12px; font-size:26px; }
+    .muted{ color:var(--muted); margin:8px 0 16px; }
+    input[type=email]{ padding:12px; width:100%; border-radius:10px; border:1px solid rgba(255,255,255,.14); background:#0f1424; color:#fff; margin-bottom:12px; }
+    button{ padding:12px 16px; border-radius:10px; border:none; background:var(--accent); color:#0b0f19; font-weight:800; cursor:pointer; }
+    button:hover{ background:#78afff; }
   </style>
 </head>
 <body>
   <main class="card">
-    <h1>Sign in to ryttr</h1>
+    <h1>🔑 Sign in</h1>
+    <p class="muted">Enter your email to receive a magic login link.</p>
+
     <form id="loginForm">
-      <input type="email" id="email" placeholder="you@example.com" required>
+      <input id="email" type="email" placeholder="you@example.com" required />
       <button type="submit">Send Magic Link</button>
     </form>
-    <p id="message"></p>
+
+    <p id="msg" class="muted"></p>
   </main>
 
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script>
+    // Supabase project
     const { createClient } = supabase;
-    const supabaseUrl = "https://fuiuaiquuhhsxrhzwtoa.supabase.co";
-    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ1aXVhaXF1dWhoc3hyaHp3dG9hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0OTA3NjAsImV4cCI6MjA3NTA2Njc2MH0.fVM46kXmEx-SuzXOzHwOgeXEKSp4qgS-wFWKQZf-4WY";
-    const db = createClient(supabaseUrl, supabaseKey);
+    const db = createClient(
+      "https://fuiuaiquuhhsxrhzwtoa.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ1aXVhaXF1dWhoc3hyaHp3dG9hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0OTA3NjAsImV4cCI6MjA3NTA2Njc2MH0.fVM46kXmEx-SuzXOzHwOgeXEKSp4qgS-wFWKQZf-4WY"
+    );
 
     const form = document.getElementById("loginForm");
-    const message = document.getElementById("message");
+    const emailInput = document.getElementById("email");
+    const msg = document.getElementById("msg");
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const email = document.getElementById("email").value.trim();
-      message.textContent = "";
+      const email = emailInput.value.trim();
+      msg.textContent = "⏳ Sending magic link…";
 
-      // Use the exact domain the user is on
-      const redirect = `${window.location.origin}/auth.html`;
-
-      const { error } = await db.auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: redirect }
-      });
-
-      if (error) {
-        message.textContent = "Error: " + error.message;
-        message.style.color = "salmon";
-      } else {
-        message.textContent = "Check your email for the magic link ✨";
-        message.style.color = "lightgreen";
-        form.reset();
+      try {
+        const { error } = await db.auth.signInWithOtp({
+          email,
+          options: {
+            emailRedirectTo: "https://ryttr.vercel.app/auth.html"
+          }
+        });
+        if (error) throw error;
+        msg.textContent = "✅ Magic link sent! Check your inbox.";
+        emailInput.value = "";
+      } catch (err) {
+        msg.textContent = "❌ Error: " + err.message;
       }
     });
   </script>
