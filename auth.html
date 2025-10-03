@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Auth • ryttr</title>
+</head>
+<body style="font-family:system-ui; text-align:center; padding:30px; background:#0b0f19; color:#fff;">
+  <h1>Authenticating…</h1>
+  <p>Please wait while we log you in.</p>
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script>
+    const { createClient } = supabase;
+    const supabaseUrl = "https://fuiuaiquuhhsxrhzwtoa.supabase.co";
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ1aXVhaXF1dWhoc3hyaHp3dG9hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0OTA3NjAsImV4cCI6MjA3NTA2Njc2MH0.fVM46kXmEx-SuzXOzHwOgeXEKSp4qgS-wFWKQZf-4WY";
+    const db = createClient(supabaseUrl, supabaseKey);
+
+    async function handleAuth() {
+      const { data, error } = await db.auth.getSession();
+      if (error) {
+        document.body.innerHTML = "<h1>Login failed ❌</h1><p>" + error.message + "</p>";
+        return;
+      }
+      if (data.session) {
+        document.body.innerHTML = "<h1>Welcome 🎉</h1><p>You are logged in as <b>" 
+          + data.session.user.email + "</b></p><p><a href='/demo.html'>Go to demo</a></p>";
+      } else {
+        document.body.innerHTML = "<h1>No active session found</h1>";
+      }
+    }
+    handleAuth();
+  </script>
+</body>
+</html>
