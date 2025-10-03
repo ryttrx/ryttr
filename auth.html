@@ -1,13 +1,20 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Auth • ryttr</title>
+  <meta charset="utf-8" />
+  <title>Auth Redirect • Ryttr</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; padding: 2rem; background:#0b0f19; color:#fff; }
+    .card { background:#121826; border-radius:12px; padding:20px; max-width:400px; margin:auto; }
+  </style>
 </head>
-<body style="font-family:system-ui; text-align:center; padding:30px; background:#0b0f19; color:#fff;">
-  <h1>Authenticating…</h1>
-  <p>Please wait while we log you in.</p>
+<body>
+  <div class="card">
+    <h1>✅ Signed in</h1>
+    <p id="msg">Checking session…</p>
+    <p><a href="/demo-yt-transcript.html" style="color:#5b9cff;">Go to Transcript Demo</a></p>
+  </div>
 
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script>
@@ -17,36 +24,16 @@
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ1aXVhaXF1dWhoc3hyaHp3dG9hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0OTA3NjAsImV4cCI6MjA3NTA2Njc2MH0.fVM46kXmEx-SuzXOzHwOgeXEKSp4qgS-wFWKQZf-4WY"
     );
 
-    async function finishLogin() {
-      try {
-        // Handles both magic link styles
-        const hasQueryCode = new URLSearchParams(window.location.search).get("code");
-        const hasHashToken = window.location.hash.includes("access_token");
-
-        if (hasQueryCode) {
-          await db.auth.exchangeCodeForSession({ queryString: window.location.search });
-        } else if (hasHashToken) {
-          await db.auth.exchangeCodeForSession({ queryString: window.location.hash.substring(1) });
-        }
-
-        const { data, error } = await db.auth.getUser();
-        if (error) throw error;
-
-        const email = data.user?.email || "your account";
-        document.body.innerHTML = `
-          <h1>Welcome 🎉</h1>
-          <p>Logged in as <b>${email}</b></p>
-          <p><a href="/demo.html" style="color:#5b9cff">Go to demo</a></p>
-        `;
-      } catch (err) {
-        document.body.innerHTML = `
-          <h1>Login issue</h1>
-          <p>${err.message || err}</p>
-          <p><a href="/login.html" style="color:#5b9cff">Try again</a></p>
-        `;
+    async function checkUser() {
+      const { data } = await db.auth.getUser();
+      const msg = document.getElementById("msg");
+      if (data.user) {
+        msg.textContent = "Welcome, " + (data.user.email || "you’re signed in!");
+      } else {
+        msg.textContent = "No active session. Please log in again.";
       }
     }
-    finishLogin();
+    checkUser();
   </script>
 </body>
 </html>
