@@ -5,14 +5,20 @@
   <title>Auth Redirect • Ryttr</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; text-align: center; padding: 2rem; background:#0b0f19; color:#fff; }
-    .card { background:#121826; border-radius:12px; padding:20px; max-width:420px; margin:auto; border:1px solid rgba(255,255,255,.1); }
+    body { 
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; 
+      text-align: center; padding: 2rem; background:#0b0f19; color:#fff; 
+    }
+    .card { 
+      background:#121826; border-radius:12px; padding:20px; max-width:420px; margin:auto; 
+      border:1px solid rgba(255,255,255,.1); 
+    }
   </style>
 </head>
 <body>
   <div class="card">
-    <h1>Authenticating…</h1>
-    <p id="msg">Please wait</p>
+    <h1>🔄 Signing you in…</h1>
+    <p id="msg">Please wait a moment</p>
   </div>
 
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
@@ -27,14 +33,37 @@
 
     async function finishLogin() {
       try {
-        // Handle both styles of magic link
-        const hasQueryCode = new URLSearchParams(window.location.search).get("code");
-        const hasHashToken = window.location.hash.includes("access_token");
+        // Handle both query string and hash formats from Supabase
+        const query = window.location.search;
+        const hash = window.location.hash;
 
-        if (hasQueryCode) {
-          await db.auth.exchangeCodeForSession({ queryString: window.location.search });
-        } else if (hasHashToken) {
-          await db.auth.exchangeCodeForSession({ queryString: window.location.hash.substring(1) });
+        if (query.includes("code=")) {
+          await db.auth.exchangeCodeForSession({ queryString: query });
+        } else if (hash.includes("access_token")) {
+          await db.auth.exchangeCodeForSession({ queryString: hash.substring(1) });
+        }
+
+        const { data, error } = await db.auth.getUser();
+        if (error) throw error;
+
+        if (data.user) {
+          msg.textContent = "✅ Signed in as " + (data.user.email || "your account");
+          setTimeout(() => {
+            window.location.href = "/demo-yt-transcript.html";
+          }, 1000);
+        } else {
+          throw new Error("No active session. Please log in again.");
+        }
+      } catch (e) {
+        msg.textContent = "❌ Login issue: " + (e.message || e);
+        msg.insertAdjacentHTML("beforeend", `<br><a href="/login.html" style="color:#5b9cff;">Try again</a>`);
+      }
+    }
+
+    finishLogin();
+  </script>
+</body>
+</html>          await db.auth.exchangeCodeForSession({ queryString: window.location.hash.substring(1) });
         }
 
         const { data, error } = await db.auth.getUser();
