@@ -23,7 +23,7 @@
       padding:12px 16px; border-radius:10px; border:none;
       background:#5b9cff; color:#0b0f19; font-weight:bold; width:100%;
     }
-    #message { margin-top:10px; font-size:14px; }
+    #message { margin-top:10px; font-size:14px; min-height:20px; }
   </style>
 </head>
 <body>
@@ -49,10 +49,14 @@
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const email = document.getElementById("email").value.trim();
+      message.textContent = "";
+
+      // Use the exact domain the user is on
+      const redirect = `${window.location.origin}/auth.html`;
 
       const { error } = await db.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: "https://ryttr.vercel.app/auth.html" }
+        options: { emailRedirectTo: redirect }
       });
 
       if (error) {
