@@ -52,7 +52,7 @@
 
       const { error } = await db.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: "https://ryttr.vercel.app/auth" }
+        options: { emailRedirectTo: "https://ryttr.vercel.app/auth.html" }
       });
 
       if (error) {
