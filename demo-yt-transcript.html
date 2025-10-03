@@ -1,190 +1,69 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>YouTube Transcript Demo • ryttr</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YT Transcript Demo | Ryttr</title>
   <style>
-    :root { --bg:#0b0f19; --surface:#121826; --text:#e6e6e6; --muted:#aab0bd; --accent:#5b9cff; }
-    body{
-      margin:0; min-height:100vh; display:grid; place-items:center; background:var(--bg);
-      color:var(--text); font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; padding:24px;
-    }
-    .card{
-      width:100%; max-width:720px; background:var(--surface); border:1px solid rgba(255,255,255,.08);
-      border-radius:16px; padding:24px; box-shadow:0 10px 30px rgba(0,0,0,.25);
-    }
-    h1{ margin:0 0 8px; font-size:26px; }
-    .muted{ color:var(--muted); margin:6px 0 16px; }
-    .row{ display:grid; grid-template-columns:1fr auto; gap:10px; }
-    input[type=url]{ padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,.14); background:#0f1424; color:#fff; }
-    button{ padding:12px 16px; border-radius:10px; border:none; background:var(--accent); color:#0b0f19; font-weight:800; cursor:pointer; }
-    .pill{ display:inline-block; padding:6px 10px; border:1px solid rgba(255,255,255,.14); border-radius:999px; font-size:12px; color:#cfd6e4; }
-    .split{ display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
-    pre{ background:#0f1424; color:#cfe3ff; padding:14px; border-radius:10px; overflow:auto; white-space:pre-wrap; }
-    .err{ color:#ffb3b3; }
-    .ok{ color:#9fe6a0; }
-    a { color:#8fbcff; text-decoration:none; }
-    @media (max-width:560px){ .row{ grid-template-columns:1fr; } button{ width:100%; } }
+    body { font-family: Arial, sans-serif; margin: 2rem; background: #f9f9f9; }
+    h1 { color: #333; }
+    textarea, input { width: 100%; padding: 10px; margin: 10px 0; }
+    button { padding: 10px 20px; background: #0070f3; color: white; border: none; cursor: pointer; }
+    button:hover { background: #0051a3; }
+    pre { white-space: pre-wrap; background: #fff; padding: 1rem; border: 1px solid #ddd; }
   </style>
 </head>
 <body>
-  <main class="card">
-    <div class="split">
-      <h1>📺 YouTube Transcript</h1>
-      <span id="statusPill" class="pill">Checking session</span>
-    </div>
-    <p class="muted" id="usesInfo">Loading usage</p>
+  <h1>🎥 YouTube Transcript Demo</h1>
+  <p>Paste a YouTube URL and get a cleaned transcript. Powered by Ryttr.</p>
 
-    <form id="demoForm" class="row">
-      <input id="ytUrl" type="url" placeholder="https://www.youtube.com/watch?v=VIDEOID" required />
-      <button type="submit">Run transcript</button>
-    </form>
+  <input id="ytUrl" placeholder="Enter YouTube link here" />
+  <button onclick="getTranscript()">Run Transcript</button>
 
-    <p id="msg" class="muted"></p>
-    <div id="resultBox" style="display:none;">
-      <h3 style="margin:16px 0 8px;">Transcript</h3>
-      <pre id="result"></pre>
-    </div>
+  <h2>Result:</h2>
+  <pre id="output">No results yet…</pre>
 
-    <p class="muted" style="margin-top:18px;">
-      <a href="/demo.html">All demos</a>
-      <span style="opacity:.5;">|</span>
-      <a href="/login.html">Sign in</a>
-      <span style="opacity:.5;">|</span>
-      <a id="signOut" href="#">Sign out</a>
-    </p>
-  </main>
-
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script>
-    // Config
-    const DEMO_KEY = "yt_transcript";
-    const DEMO_LIMIT = 3;
-    const PY_SERVICE_URL = "https://YOUR-PYTHON-HOST/transcript"; // update after you deploy Python
-    const PY_SERVICE_KEY = "YOUR-PY-SERVICE-KEY"; // set a long random key and match it on the Python host
+    // Your backend API
+    const PY_SERVICE_URL = "https://ryttr-transcript-nuclear.onrender.com/transcript";
+    const PY_SERVICE_KEY = "ryttr_super_secret_456_even_longer"; // must match Render
 
-    // Supabase
-    const { createClient } = supabase;
-    const db = createClient(
-      "https://fuiuaiquuhhsxrhzwtoa.supabase.co",
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ1aXVhaXF1dWhoc3hyaHp3dG9hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0OTA3NjAsImV4cCI6MjA3NTA2Njc2MH0.fVM46kXmEx-SuzXOzHwOgeXEKSp4qgS-wFWKQZf-4WY"
-    );
+    async function getTranscript() {
+      const url = document.getElementById("ytUrl").value.trim();
+      const output = document.getElementById("output");
 
-    // Elements
-    const statusPill = document.getElementById("statusPill");
-    const usesInfo = document.getElementById("usesInfo");
-    const form = document.getElementById("demoForm");
-    const ytUrl = document.getElementById("ytUrl");
-    const msg = document.getElementById("msg");
-    const resultBox = document.getElementById("resultBox");
-    const resultEl = document.getElementById("result");
-    const signOutLink = document.getElementById("signOut");
-
-    let currentUser = null;
-    let remaining = 0;
-
-    function isValidYouTube(u){
-      try {
-        const url = new URL(u);
-        if (url.hostname.includes("youtube.com")) return url.searchParams.get("v")?.length > 0;
-        if (url.hostname === "youtu.be") return url.pathname.length > 1;
-        return false;
-      } catch { return false; }
-    }
-
-    async function loadSession() {
-      const { data } = await db.auth.getUser();
-      if (!data.user) {
-        statusPill.textContent = "Not signed in";
-        statusPill.style.borderColor = "rgba(255,120,120,.5)";
-        usesInfo.textContent = "Sign in to use the demo";
-        form.style.display = "none";
+      if (!url) {
+        output.textContent = "❌ Please enter a YouTube URL.";
         return;
       }
-      currentUser = data.user;
-      statusPill.textContent = "Signed in";
-      statusPill.style.borderColor = "rgba(159,230,160,.5)";
-      form.style.display = "grid";
-      await refreshUsage();
-    }
 
-    async function refreshUsage() {
-      const resp = await db
-        .from("demo_uses")
-        .select("id", { count: "exact" })
-        .eq("user_id", currentUser.id)
-        .eq("demo_key", DEMO_KEY);
+      output.textContent = "⏳ Processing, please wait…";
 
-      const usedCount = resp.count ?? 0;
-      remaining = Math.max(0, DEMO_LIMIT - usedCount);
-      usesInfo.textContent = `You have ${remaining} of ${DEMO_LIMIT} runs left`;
-      const btn = form.querySelector("button");
-      if (remaining <= 0) {
-        btn.disabled = true;
-        msg.textContent = "You have used your demo runs. Thanks for testing ryttr.";
-        msg.className = "muted err";
-      } else {
-        btn.disabled = false;
-        msg.textContent = "";
-        msg.className = "muted";
-      }
-    }
-
-    async function recordUse() {
-      await db.from("demo_uses").insert([{ user_id: currentUser.id, demo_key: DEMO_KEY }]);
-      await refreshUsage();
-    }
-
-    async function callPython(url) {
-      const res = await fetch(PY_SERVICE_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-api-key": PY_SERVICE_KEY },
-        body: JSON.stringify({ url })
-      });
-      if (!res.ok) throw new Error(await res.text().catch(()=> "Service error"));
-      return res.json();
-    }
-
-    signOutLink.addEventListener("click", async (e) => {
-      e.preventDefault();
-      await db.auth.signOut();
-      window.location.href = "/login.html";
-    });
-
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      resultBox.style.display = "none";
-      resultEl.textContent = "";
-      msg.textContent = "";
-      if (!currentUser) { msg.textContent = "Please sign in first"; msg.className = "muted err"; return; }
-      if (remaining <= 0) { msg.textContent = "You have used your demo runs. Thanks for testing ryttr."; msg.className = "muted err"; return; }
-
-      const url = ytUrl.value.trim();
-      if (!isValidYouTube(url)) { msg.textContent = "Enter a valid YouTube link"; msg.className = "muted err"; return; }
-
-      form.querySelector("button").disabled = true;
-      msg.textContent = "Running transcript. Please wait";
       try {
-        const data = await callPython(url);
-        let text = "";
-        if (Array.isArray(data.transcript)) text = data.transcript.map(t => t.text).join(" ");
-        else if (typeof data.text === "string") text = data.text;
-        else text = JSON.stringify(data, null, 2);
-        resultEl.textContent = text || "No transcript text returned";
-        resultBox.style.display = "block";
-        await recordUse();
-        msg.textContent = "Success";
-        msg.className = "ok";
-      } catch (err) {
-        msg.textContent = `Error: ${err.message || err}`;
-        msg.className = "muted err";
-      } finally {
-        form.querySelector("button").disabled = remaining <= 0;
-      }
-    });
+        const res = await fetch(PY_SERVICE_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": PY_SERVICE_KEY
+          },
+          body: JSON.stringify({ url })
+        });
 
-    loadSession();
+        if (!res.ok) {
+          output.textContent = "❌ Error: " + res.status + " " + res.statusText;
+          return;
+        }
+
+        const data = await res.json();
+        if (data.error) {
+          output.textContent = "⚠️ " + data.error;
+        } else {
+          output.textContent = "✅ Done!\n\n" + data.full_text.slice(0, 2000) + (data.full_text.length > 2000 ? "...\n\n[truncated]" : "");
+        }
+      } catch (err) {
+        output.textContent = "🚨 Failed to fetch: " + err.message;
+      }
+    }
   </script>
 </body>
 </html>
