@@ -20,7 +20,6 @@
     async function finishLogin() {
       try {
         // Handles both magic link styles
-        // 1) /auth?code=...  2) /auth#access_token=...
         const hasQueryCode = new URLSearchParams(window.location.search).get("code");
         const hasHashToken = window.location.hash.includes("access_token");
 
